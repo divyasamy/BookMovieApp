@@ -2,8 +2,6 @@ import {
     Button,
     FormControl,
     IconButton,
-    Input,
-    InputLabel,
     Tabs,
     Tab,
     TextField,
@@ -20,28 +18,22 @@ import {
     return <div {...other}>{value === index && <div p={3}>{children}</div>}</div>;
   }
   
-  const Header = function (props) {
+    const Header = function (props) {
     const [modalIsOpen, setIsOpen] = React.useState(false);
-    const [loginContent, setLoginContent] = React.useState({
-      login: "",
-      password: "",
-    });
     const [firstName, setFirstName] = React.useState("");
     const [lastName, setLastName] = React.useState("");
     const [email, setEmail] = React.useState("");
     const [password, setPassword] = React.useState("");
     const [phone, setPhone] = React.useState("");
     const [value, setValue] = React.useState(0);
-    const [loginState, setLoginState] = React.useState(false);
-    const [userName,setUserName] = React.useState("");
-    const [loginPassword,setLoginPassword] = React.useState("");
-    const [buttonLogin,setButtonLogin] = React.useState("LOGIN");
-    const [BookShow,setBookShow] = React.useState('');
-  
-    const openModal = () => {
-      setIsOpen(true);
-    };
-  
+    const [userName, setUserName] = React.useState("");
+    const [loginPassword, setLoginPassword] = React.useState("");
+    const [buttonLogin, setButtonLogin] = React.useState("LOGIN");
+    const [signUp, setSignUp] = React.useState("");
+    const [accessTokenValue, setAccessToken] = React.useState("");
+    const [loginDetail, setLoginDetail] = React.useState("");
+
+
     const closeModal = () => {
       setIsOpen(false);
     };
@@ -49,53 +41,77 @@ import {
     const handleChange = (event, newValue) => {
       setValue(newValue);
     };
+    const customStyles = {};
   
     async function login() {
-      console.log(userName,loginPassword)
+      console.log(userName, loginPassword);
       const param = window.btoa(`${userName}:${loginPassword}`);
-      try {
-        const rawResponse = await fetch(
-          "http://localhost:8085/api/v1/auth/login",
-          {
-            method: "POST",
-            headers: {
-              Accept: "application/json",
-              "Content-Type": "application/json;charset=UTF-8",
-              authorization: `Basic ${param}`,
-            },
-          }
-        );
-  
-        const result = await rawResponse.json();
+      if (userName == "" || loginPassword == "") {
+        setLoginDetail("Enter all the values");
+      } else {
+        try {
+          const rawResponse = await fetch(
+            "http://localhost:8085/api/v1/auth/login",
+            {
+              method: "POST",
+              headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json;charset=UTF-8",
+                authorization: `Basic ${param}`,
+              },
+            }
+          );
+
+          const result = await rawResponse.json();
         if (rawResponse.ok) {
           window.sessionStorage.setItem("user-details", JSON.stringify(result));
           window.sessionStorage.setItem(
             "access-token",
             rawResponse.headers.get("access-token")
           );
-          setLoginState(true);
-          setButtonLogin('LOGOUT');
+          setAccessToken(rawResponse.headers.get("access-token"));
+          console.log(rawResponse.headers.get("access-token"));
+          setButtonLogin("LOGOUT");
           setIsOpen(false);
+          setLoginDetail("");
         } else {
           const error = new Error();
           error.message = result.message || "Something went wrong.";
+          setLoginDetail("Incorrect username or password");
         }
       } catch (e) {
         alert(`Error: ${e.message}`);
+        setLoginDetail("Incorrect username or password");
+        }
+      
+      }
+    }
+
+    async function logout() {
+      
+      console.log(accessTokenValue);
+      const rawResponse = await fetch(
+        "http://localhost:8085/api/v1/auth/logout",
+        {
+          method: "POST",
+          headers: {
+            Accept: "*/*",
+            "Content-Type": "application/json",
+            authorization: `Bearer ${accessTokenValue}`,
+        },  
+        }
+      );
+  
+      const result = rawResponse.json();
+      if (rawResponse.ok) {
+        setButtonLogin("LOGIN");
+      } else {
+        const error = new Error();
+        error.message = result.message || "Something went wrong";
       }
     }
   
-    const inputChangedHandler = (e) => {
-      const state = loginContent;
-      state[e.target.name] = e.target.value;
-      setLoginContent({ ...state });
-    };
-  
-    const handleSubmit = (e) => {
-      e.preventDefault();
-      console.log(firstName, lastName, email, password, phone);
-    };
-  
+      
     const handleSubmitSignup = async () => {
       const params = {
         email_address: email,
@@ -115,43 +131,42 @@ import {
       })
         .then((response) => {
           response.json();
+          setSignUp("Registration Successfull");
         })
-        .catch((error) => console.log(error));
+        .catch((error) => {
+          setSignUp("Registration not successful");
+          console.log(error);
+        });
     };
   
-  const loginOrLogout =()=>{
-    if(buttonLogin=='LOGIN'){
-      setIsOpen(true);
-      setButtonLogin('LOGIN');
-    }
-    else{
-      setButtonLogin('LOGOUT');
-    }
-  }
+    const loginOrLogout = () => {
+      if (buttonLogin === "LOGIN") {
+        setIsOpen(true);
+        setButtonLogin("LOGIN");
+      } else {
+        
+        logout();
+      }
+    };
   
     return (
       <div>
         <div className="header">
-          <div>
-            <img
-              className="img-fluid rotate linear infinite"
-              src={Logo}
-              alt="logo"
-            />
-          </div>
+        <img className="img-fluid" src={Logo} alt="logo" />  
   
-          <Button variant="contained" className="buttonLogin" onClick={loginOrLogout}>
+          <Button
+          variant="contained"
+          className="buttonLogin"
+          onClick={loginOrLogout}
+          >
             {buttonLogin}
           </Button>
-          <Button variant="contained" className="buttonLogin" color="primary">
-            {buttonLogin}
-          </Button>
-          <div className="modalStyling">
             <ReactModal
               isOpen={modalIsOpen}
               onRequestClose={closeModal}
               contentLabel="Login Modal"
               ariaHideApp={false}
+              style={customStyles}
               className="custom-model-class"
             >
               <IconButton onClick={closeModal} className="closeButton">
@@ -186,11 +201,8 @@ import {
                     />
                     <br />
                     <br />
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      onClick={login}
-                    >
+                    <div>{loginDetail}</div>
+                    <Button variant="contained" color="primary" onClick={login}>
                       LOGIN
                     </Button>
                   </FormControl>
@@ -205,8 +217,7 @@ import {
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
                       required={true}
-                      helperText="Incorrect entry."
-                    />
+                      />
                     <br />
                     <br />
                     <TextField
@@ -215,8 +226,7 @@ import {
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
                       required={true}
-                      helperText="Incorrect entry."
-                    />
+                      />
                     <br />
                     <br />
                     <TextField
@@ -242,27 +252,25 @@ import {
                     <TextField
                       label="Mobile"
                       variant="standard"
-                      value="Mobile"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       required={true}
                     />
                     <br />
                     <br />
+                    <div>{signUp}</div>
                     <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={handleSubmitSignup}
-                  >
-                    SIGN UP
-                  </Button>
+                      variant="contained"
+                      color="primary"
+                      onClick={handleSubmitSignup}
+                    >
+                      SIGN UP
+                    </Button>
                   </FormControl>
-  
                 </TabPanel>
                 {/*  */}
               </div>
             </ReactModal>
-          </div>
         </div>
       </div>
     );
