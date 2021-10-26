@@ -5,13 +5,15 @@ import {
     Tabs,
     Tab,
     TextField,
+    FormHelperText,
   } from "@material-ui/core";
   import React from "react";
   import "./Header.css";
   import Logo from "../../assets/logo.svg";
   import ReactModal from "react-modal";
   import Close from "@material-ui/icons/Close";
-  
+  import { Link } from "react-router-dom";
+
   function TabPanel(props) {
     const { children, value, index, ...other } = props;
   
@@ -30,10 +32,25 @@ import {
     const [loginPassword, setLoginPassword] = React.useState("");
     const [buttonLogin, setButtonLogin] = React.useState("LOGIN");
     const [signUp, setSignUp] = React.useState("");
-    const [accessTokenValue, setAccessToken] = React.useState("");
+    const [isUserLoggedIn, setUserLoggedIn] = React.useState(false);
     const [loginDetail, setLoginDetail] = React.useState("");
-
-
+    const accessedDetailsPage = props.buttonRequest;
+    const detailsID = props.getDetails;
+    const [reqLoginUserName,setReqLoginUserName] = React.useState("dispNone");
+  const [reqLoginPassword,setReqLoginPassword] = React.useState("dispNone");
+  const [reqPhone,setReqPhone] = React.useState("dispNone");
+  const [reqEmail,setReqEmail] = React.useState("dispNone");
+  const [reqPassword,setReqPassword] = React.useState("dispNone");
+  const [reqFirstName,setReqFirstName] = React.useState("dispNone");
+  const [reqLastName,setReqLastName] = React.useState("dispNone");
+    React.useEffect(() => {
+      const loginInfo = window.sessionStorage.getItem("access-token");
+      if (loginInfo) {
+        setUserLoggedIn(true);
+      } else {
+        setUserLoggedIn(false);
+      }
+    }, []);
     const closeModal = () => {
       setIsOpen(false);
     };
@@ -41,12 +58,12 @@ import {
     const handleChange = (event, newValue) => {
       setValue(newValue);
     };
-    const customStyles = {};
-  
+    //Implementation of login functionality
     async function login() {
-      console.log(userName, loginPassword);
       const param = window.btoa(`${userName}:${loginPassword}`);
-      if (userName == "" || loginPassword == "") {
+      if (userName === "" || loginPassword === "") {
+        userName ==="" ? setReqLoginUserName("dispBlock"):setReqLoginUserName("dispNone");
+      loginPassword==="" ? setReqLoginPassword("dispBlock"):setReqLoginPassword("dispNone");
         setLoginDetail("Enter all the values");
       } else {
         try {
@@ -69,11 +86,12 @@ import {
             "access-token",
             rawResponse.headers.get("access-token")
           );
-          setAccessToken(rawResponse.headers.get("access-token"));
-          console.log(rawResponse.headers.get("access-token"));
           setButtonLogin("LOGOUT");
           setIsOpen(false);
           setLoginDetail("");
+          setUserLoggedIn(true);
+          setUserName("");
+          setLoginPassword("");
         } else {
           const error = new Error();
           error.message = result.message || "Something went wrong.";
@@ -86,10 +104,9 @@ import {
       
       }
     }
-
+    //Implementation of Logout functionality
     async function logout() {
-      
-      console.log(accessTokenValue);
+      const param = window.sessionStorage.getItem("access-token");
       const rawResponse = await fetch(
         "http://localhost:8085/api/v1/auth/logout",
         {
@@ -97,21 +114,22 @@ import {
           headers: {
             Accept: "*/*",
             "Content-Type": "application/json",
-            authorization: `Bearer ${accessTokenValue}`,
+            authorization: `Bearer ${param}`,
         },  
         }
       );
   
-      const result = rawResponse.json();
       if (rawResponse.ok) {
         setButtonLogin("LOGIN");
+        window.sessionStorage.clear();
+        setUserLoggedIn(false);
       } else {
-        const error = new Error();
-        error.message = result.message || "Something went wrong";
+        setLoginDetail("Incorrect username or password");
+        
       }
     }
   
-      
+    //Implementation of signup functionality  
     const handleSubmitSignup = async () => {
       const params = {
         email_address: email,
@@ -120,32 +138,53 @@ import {
         mobile_number: phone,
         password: password,
       };
-      console.log(params);
-      fetch("http://localhost:8085/api/v1/signup", {
+      if (
+        email === "" ||
+        firstName === "" ||
+        lastName === "" ||
+        phone === "" ||
+        password === ""
+      ) {
+        email ==="" ? setReqEmail("dispBlock"):setReqEmail("dispNone");
+      firstName === "" ? setReqFirstName("dispBlock"):setReqFirstName("dispNone")
+      lastName === "" ? setReqLastName("dispBlock"):setReqLastName("dispNone")
+      phone === "" ? setReqPhone("dispBlock"):setReqPhone("dispNone");
+      password === "" ? setReqPassword("dispBlock") :setReqPassword("dispNone");
+        setSignUp("Enter all the mandatory details !");
+      } else {
+        fetch("http://localhost:8085/api/v1/signup", {
         body: JSON.stringify(params),
         method: "POST",
         headers: {
-          Accept: "application/json;charset=UTF-8",
-          "Content-Type": "application/json;charset=UTF-8",
-        },
-      })
+            Accept: "application/json;charset=UTF-8",
+            "Content-Type": "application/json;charset=UTF-8",
+          },
+        })
         .then((response) => {
           response.json();
-          setSignUp("Registration Successfull");
+          setSignUp("Registration Successfull. Please Login !");
+          setFirstName("");
+          setLastName("");
+          setEmail("");
+          setPassword("");
+          setPhone("");
         })
         .catch((error) => {
           setSignUp("Registration not successful");
-          console.log(error);
         });
+      }
     };
-  
+    //Modal functionality implementation
     const loginOrLogout = () => {
-      if (buttonLogin === "LOGIN") {
+    if (!isUserLoggedIn) {
         setIsOpen(true);
         setButtonLogin("LOGIN");
-      } else {
-        
-        logout();
+      }
+    };
+  
+    const handleBookShow = () => {
+      if (buttonLogin === "LOGIN") {
+        setIsOpen(true);
       }
     };
   
@@ -154,19 +193,49 @@ import {
         <div className="header">
         <img className="img-fluid" src={Logo} alt="logo" />  
   
-          <Button
-          variant="contained"
-          className="buttonLogin"
-          onClick={loginOrLogout}
-          >
-            {buttonLogin}
+        {isUserLoggedIn ? (
+          <Button variant="contained" className="buttonLogin" onClick={logout}>
+            Logout
           </Button>
+        ) : (
+          <Button
+            variant="contained"
+            className="buttonLogin"
+            onClick={loginOrLogout}
+          >
+            Login
+          </Button>
+        )}
+
+
+        {accessedDetailsPage && isUserLoggedIn && (
+          <Link to={`/bookshow/${detailsID}`}>
+            <Button
+              variant="contained"
+              className="bookMyShow"
+              color="primary"
+              onClick={handleBookShow}
+            >
+              {props.buttonNeeded}
+            </Button>
+          </Link>
+      )}
+      {accessedDetailsPage && !isUserLoggedIn && (
+        <Button
+          onClick={loginOrLogout}
+          variant="contained"
+          color="primary"
+          className="bookMyShow"
+        >
+          {props.buttonNeeded}
+        </Button>
+      )}
+          <div className="modalStyling">
             <ReactModal
               isOpen={modalIsOpen}
               onRequestClose={closeModal}
               contentLabel="Login Modal"
               ariaHideApp={false}
-              style={customStyles}
               className="custom-model-class"
             >
               <IconButton onClick={closeModal} className="closeButton">
@@ -189,8 +258,11 @@ import {
                       onChange={(e) => setUserName(e.target.value)}
                       required={true}
                     />
+                    <FormHelperText className={reqLoginUserName}>
+                    <span className="red">Required</span>
+                    </FormHelperText>
                     <br />
-                    <br />
+                    
                     <TextField
                       label="LoginPassword"
                       variant="standard"
@@ -199,12 +271,15 @@ import {
                       onChange={(e) => setLoginPassword(e.target.value)}
                       required={true}
                     />
+                    <FormHelperText className={reqLoginPassword}>
+                    <span className="red">Required</span>
+                    </FormHelperText>
                     <br />
-                    <br />
-                    <div>{loginDetail}</div>
+                    <div className="error-details-login">{loginDetail}</div> 
                     <Button variant="contained" color="primary" onClick={login}>
                       LOGIN
                     </Button>
+                    <br />
                   </FormControl>
                 </TabPanel>
                 <TabPanel value={value} index={1}>
@@ -218,7 +293,9 @@ import {
                       onChange={(e) => setFirstName(e.target.value)}
                       required={true}
                       />
-                    <br />
+                    <FormHelperText className={reqFirstName}>
+                    <span className="red">Required</span>
+                  </FormHelperText>
                     <br />
                     <TextField
                       label="Last Name"
@@ -227,7 +304,9 @@ import {
                       onChange={(e) => setLastName(e.target.value)}
                       required={true}
                       />
-                    <br />
+                  <FormHelperText className={reqLastName}>
+                    <span className="red">Required</span>
+                  </FormHelperText>
                     <br />
                     <TextField
                       label="Email"
@@ -237,7 +316,9 @@ import {
                       onChange={(e) => setEmail(e.target.value)}
                       required={true}
                     />
-                    <br />
+                    <FormHelperText className={reqEmail}>
+                    <span className="red">Required</span>
+                    </FormHelperText>
                     <br />
                     <TextField
                       label="Password"
@@ -247,7 +328,9 @@ import {
                       onChange={(e) => setPassword(e.target.value)}
                       required={true}
                     />
-                    <br />
+                    <FormHelperText className={reqPassword}>
+                    <span className="red">Required</span>
+                    </FormHelperText>
                     <br />
                     <TextField
                       label="Mobile"
@@ -256,9 +339,11 @@ import {
                       onChange={(e) => setPhone(e.target.value)}
                       required={true}
                     />
+                    <FormHelperText className={reqPhone}>
+                    <span className="red">Required</span>
+                    </FormHelperText>
                     <br />
-                    <br />
-                    <div>{signUp}</div>
+                    <div className="error-details-login">{signUp}</div> 
                     <Button
                       variant="contained"
                       color="primary"
@@ -266,12 +351,14 @@ import {
                     >
                       SIGN UP
                     </Button>
+                    <br />
                   </FormControl>
                 </TabPanel>
                 {/*  */}
               </div>
             </ReactModal>
         </div>
+      </div>
       </div>
     );
   };
