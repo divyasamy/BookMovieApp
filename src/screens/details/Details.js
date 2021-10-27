@@ -20,7 +20,7 @@ const [storyLine, setStoryLine] = useState();
 const [videoId, setVideoID] = useState();
 const [artists, setArtists] = useState([]);
 const [movieId, setMovieId] = useState();
-  const [starRating,setStarRating] = useState(0);
+const [starRating,setStarRating] = useState(0);
 
 useEffect(() => {
     async function executeForState() {
@@ -31,8 +31,6 @@ useEffect(() => {
         method: "GET",
         headers: {
           Accept: "application/json",
-
-
         },
       })
         .then((response) => response.json())
@@ -43,7 +41,6 @@ useEffect(() => {
           const d = new Date(receivedRes.release_date);
           setReleaseDate(d.toDateString());
           setRating(receivedRes.rating);
-
           setStoryLine(receivedRes.storyline);
           let videoDetails = receivedRes.trailer_url.split("v=")[1];
           let ampersandPosition = videoDetails.indexOf("&");
@@ -64,16 +61,13 @@ useEffect(() => {
             setArtists((arr) => [...arr, ...artists]);
           }
         });
-
     }
-
     executeForState();
   }, []);
 
   return (
     <div>
       <Header
-
         buttonNeeded="Book Show"
         buttonRequest={true}
         getDetails={movieId}
@@ -91,14 +85,12 @@ useEffect(() => {
           <Typography variant="headline" component="h2">
             {details.title}
           </Typography>
-          
           <Typography>
             <b>Genres: </b>
             {genres.map((genre) => (
               <span>{genre},</span>
             ))}
           </Typography>
-          
           <Typography>
             <b>Duration: </b>
             {duration}
@@ -128,7 +120,6 @@ useEffect(() => {
           {new Array(5).fill(5).map((s, i) => (
             <StarBorder style={{color: i<starRating?'yellow':'black'}} key={i} onClick={()=>{setStarRating(i+1)}}/>
           ))}
-          
           <Typography className="artist-tag">
             <b>Artists:</b>
           </Typography>
