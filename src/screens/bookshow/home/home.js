@@ -74,9 +74,6 @@ import {
             
               setArtistNameList((arr) => [...arr, ...artistNameArray]); 
         });
-        //console.log(rawResponse);
-        //setResponse(rawResponse);
-        //console.log(response);
       }
   
       checkTheResponse();
@@ -231,7 +228,6 @@ import {
                     <FormControl>
                       <InputLabel id="mutiple-select-label">Artists</InputLabel>
                       <Select
-                        // labelId="mutiple-select-label"
                         multiple
                         value={selectedArtist}
                         onChange={handleChange}
